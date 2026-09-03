@@ -11,12 +11,8 @@
       <header class="page-header">
         <div>
           <h1>Payments</h1>
-          <p>Personal receivables tracker</p>
         </div>
-        <div class="header-actions">
-          <a class="button secondary" href="planner.html">待支付计算</a>
-          <button id="sign-out-button" class="button secondary hidden" type="button">Sign out</button>
-        </div>
+        <div class="header-actions"><button id="sign-out-button" class="button secondary hidden" type="button">Sign out</button></div>
       </header>
 
       <section id="auth-panel" class="panel auth-panel">
@@ -61,6 +57,9 @@
             <label>Currency
               <select id="currency" required><option value="USD">USD</option><option value="CNY">CNY</option></select>
             </label>
+            <label id="usd-equivalent-field" class="hidden">USD Equivalent
+              <input id="usd-equivalent" type="number" min="0" step="0.01" placeholder="Manual USD amount" />
+            </label>
             <label>Note<input id="note" type="text" /></label>
             <label>Payment Date<input id="payment-date" type="date" required /></label>
             <div class="form-actions"><button id="save-button" class="button" type="submit">Add</button><button id="cancel-edit-button" class="button secondary hidden" type="button">Cancel</button></div>
@@ -89,11 +88,20 @@
           </div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>Month</th><th>Payer</th><th>Type</th><th>Direction</th><th>Amount</th><th>Note</th><th>Payment Date</th><th>Actions</th></tr></thead>
+              <thead><tr><th>Month</th><th>Payer</th><th>Type</th><th>Direction</th><th>Amount</th><th>USD Equivalent</th><th>Note</th><th>Payment Date</th><th>Actions</th></tr></thead>
               <tbody id="payments-body"></tbody>
               <tfoot id="payments-total" class="hidden"></tfoot>
             </table>
           </div>
+          <section id="outstanding-panel" class="outstanding-panel hidden" aria-live="polite">
+            <div class="outstanding-heading"><div><h3>待支付</h3></div></div>
+            <div class="outstanding-grid">
+              <label>租金应付（USD）<input id="rent-due" type="number" min="0" step="0.01" placeholder="0.00" /></label>
+              <div id="rent-outstanding" class="outstanding-card"></div>
+              <label>Utility 应付（USD）<input id="utility-due" type="number" min="0" step="0.01" placeholder="0.00" /></label>
+              <div id="utility-outstanding" class="outstanding-card"></div>
+            </div>
+          </section>
         </section>
       </section>
     </main>

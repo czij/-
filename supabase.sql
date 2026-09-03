@@ -6,6 +6,7 @@ create table if not exists public.payments (
   transaction_direction text not null default 'received' check (transaction_direction in ('received', 'paid')),
   amount numeric not null check (amount >= 0),
   currency text not null check (currency in ('USD', 'CNY')),
+  usd_equivalent numeric check (usd_equivalent >= 0),
   note text,
   payment_date date not null,
   created_at timestamptz not null default now()
@@ -15,6 +16,7 @@ alter table public.payments enable row level security;
 
 -- For an existing table created before the direction feature, run this safely once.
 alter table public.payments add column if not exists transaction_direction text not null default 'received' check (transaction_direction in ('received', 'paid'));
+alter table public.payments add column if not exists usd_equivalent numeric check (usd_equivalent >= 0);
 
 -- First create this user in Authentication > Users (email/password), then replace this value.
 create policy "owner can read payments" on public.payments for select to authenticated using ((auth.jwt() ->> 'email') = 'czijnb@gmail.com');
