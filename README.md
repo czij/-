@@ -2,6 +2,8 @@
 
 A tiny static payment and receivables tracker. It runs directly on GitHub Pages and talks to Supabase from the browser.
 
+Records are marked as either **收款** (money received) or **付款** (money paid out).
+
 ## Set up Supabase
 
 1. Create a project at [Supabase](https://supabase.com/dashboard).
