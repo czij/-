@@ -6,6 +6,8 @@ Records are marked as either **收款** (money received) or **付款** (money pa
 Payers are selected from a fixed personal list: Chunyang Tong, Xiaomeng Sun, Yijie Ru, Xiaoquan Zhang, Zijun Chen, or Bingbing.
 Payment types are selected from: 租金, Utility, and 押金.
 
+`planner.html` is a separate monthly payment calculator. It stores the entered rent and Utility amounts in that browser only, restores them when you return to a month, and always keeps USD and CNY totals separate.
+
 ## Set up Supabase
 
 1. Create a project at [Supabase](https://supabase.com/dashboard).

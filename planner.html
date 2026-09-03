@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>待支付计算 · Payments</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="page-header">
+        <div>
+          <h1>待支付计算</h1>
+          <p>输入每月租金和 Utility，自动计算本月待支付金额。</p>
+        </div>
+        <a class="button secondary" href="index.html">返回付款记录</a>
+      </header>
+
+      <section class="panel planner-panel">
+        <div class="planner-form">
+          <label>月份<input id="due-month" type="month" required /></label>
+          <label>租金<input id="rent-amount" type="number" min="0" step="0.01" placeholder="0.00" /></label>
+          <label>租金币种<select id="rent-currency"><option value="USD">USD</option><option value="CNY">CNY</option></select></label>
+          <label>Utility<input id="utility-amount" type="number" min="0" step="0.01" placeholder="0.00" /></label>
+          <label>Utility 币种<select id="utility-currency"><option value="USD">USD</option><option value="CNY">CNY</option></select></label>
+        </div>
+      </section>
+
+      <section class="panel due-summary" aria-live="polite">
+        <h2 id="due-title">本月待支付</h2>
+        <p class="summary-note">同一种币种会相加；USD 和 CNY 始终分开显示。</p>
+        <div id="due-totals" class="due-totals"></div>
+      </section>
+    </main>
+    <script src="planner.js"></script>
+  </body>
+</html>
