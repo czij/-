@@ -71,18 +71,19 @@
           <div class="table-toolbar">
             <h2>Payments</h2>
             <div class="filters" aria-label="Payment filters">
-              <label>Month <select id="month-filter"><option value="all">All months</option></select></label>
+              <label>Month <select id="month-filter"><option value="">All months</option></select></label>
               <label>Payer
-                <select id="payer-filter"><option value="all">All payers</option><option value="Chunyang Tong">Chunyang Tong</option><option value="Xiaomeng Sun">Xiaomeng Sun</option><option value="Yijie Ru">Yijie Ru</option><option value="Xiaoquan Zhang">Xiaoquan Zhang</option><option value="Zijun Chen">Zijun Chen</option><option value="Bingbing">Bingbing</option></select>
+                <select id="payer-filter"><option value="">All payers</option><option value="Chunyang Tong">Chunyang Tong</option><option value="Xiaomeng Sun">Xiaomeng Sun</option><option value="Yijie Ru">Yijie Ru</option><option value="Xiaoquan Zhang">Xiaoquan Zhang</option><option value="Zijun Chen">Zijun Chen</option><option value="Bingbing">Bingbing</option></select>
               </label>
               <label>Payment Type
-                <select id="payment-type-filter"><option value="all">All types</option><option value="租金">租金</option><option value="Utility">Utility</option><option value="押金">押金</option></select>
+                <select id="payment-type-filter"><option value="">All types</option><option value="租金">租金</option><option value="Utility">Utility</option><option value="押金">押金</option></select>
               </label>
               <label>Direction
-                <select id="direction-filter"><option value="all">All directions</option><option value="received">收款</option><option value="paid">付款</option></select>
+                <select id="direction-filter"><option value="">All directions</option><option value="received">收款</option><option value="paid">付款</option></select>
               </label>
-              <label>Note
-                <select id="note-filter"><option value="all">All notes</option></select>
+              <label class="note-combobox">Note
+                <input id="note-filter" type="search" autocomplete="off" placeholder="Type to find a note" aria-autocomplete="list" aria-controls="note-options" />
+                <div id="note-options" class="note-options hidden" role="listbox"></div>
               </label>
             </div>
           </div>
@@ -102,6 +103,11 @@
               <div id="utility-outstanding" class="outstanding-card"></div>
             </div>
           </section>
+        </section>
+
+        <section class="panel deposit-panel">
+          <div class="deposit-heading"><div><h2>押金进度</h2><p>金额以 USD 计算</p></div></div>
+          <div id="deposit-cards" class="deposit-cards"></div>
         </section>
       </section>
     </main>

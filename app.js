@@ -3,6 +3,8 @@ const configured = !SUPABASE_URL.startsWith("YOUR_") && !SUPABASE_ANON_KEY.start
 const db = configured ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 let payments = [];
 let recentChange = null;
+let selectedNote = "";
+let noteMenuOpen = false;
 
 const $ = (id) => document.getElementById(id);
 const authPanel = $("auth-panel"); const app = $("payments-app");
@@ -20,6 +22,14 @@ function message(element, text = "", success = false) { element.textContent = te
 function escapeHtml(value) { const div = document.createElement("div"); div.textContent = value || ""; return div.innerHTML; }
 function toggleUsdEquivalent() { $("usd-equivalent-field").classList.toggle("hidden", $("currency").value !== "CNY"); }
 function usdValue(payment) { return payment.currency === "USD" ? Number(payment.amount) : (Number(payment.usd_equivalent) || 0); }
+function renderDeposits() {
+  const targets = [{ payer: "Xiaomeng Sun", target: 1300 }, { payer: "Yijie Ru", target: 1300 }, { payer: "Chunyang Tong", target: 1000 }];
+  $("deposit-cards").innerHTML = targets.map(({ payer, target }) => {
+    const paid = payments.filter((payment) => payment.payer === payer && payment.payment_type === "押金").reduce((total, payment) => total + usdValue(payment), 0);
+    const difference = target - paid;
+    return `<article class="deposit-card"><h4>${escapeHtml(payer)}</h4><dl><div><dt>应付押金</dt><dd>${formatAmount(target, "USD")}</dd></div><div><dt>已记录</dt><dd>${formatAmount(paid, "USD")}</dd></div><div class="${difference <= 0 ? "deposit-complete" : ""}"><dt>${difference < 0 ? "多付" : difference === 0 ? "已付清" : "还差"}</dt><dd>${formatAmount(Math.abs(difference), "USD")}</dd></div></dl></article>`;
+  }).join("");
+}
 function renderOutstanding(rows, visible) {
   const panel = $("outstanding-panel");
   panel.classList.toggle("hidden", !visible);
@@ -35,34 +45,38 @@ function renderOutstanding(rows, visible) {
 }
 
 function resetForm() { $("payment-form").reset(); $("payment-form").classList.remove("is-editing"); $("payment-id").value = ""; $("form-title").textContent = "Add payment"; $("save-button").textContent = "Add"; $("cancel-edit-button").classList.add("hidden"); toggleUsdEquivalent(); message(formMessage); }
-function refreshMonthFilter() {
-  const filter = $("month-filter"); const selected = filter.value;
-  const months = [...new Map(payments.map((p) => [p.payment_date.slice(0, 7), monthLabel(p.payment_date)])).entries()];
-  filter.innerHTML = '<option value="all">All</option>' + months.map(([value, label]) => `<option value="${value}">${label}</option>`).join("");
-  filter.value = months.some(([value]) => value === selected) ? selected : "all";
+function filterValues() { return { month: $("month-filter").value, payer: $("payer-filter").value, paymentType: $("payment-type-filter").value, direction: $("direction-filter").value, note: selectedNote }; }
+function isAll(value) { return !value; }
+function filteredPayments(filters, ignore = "") { return payments.filter((p) =>
+  (ignore === "month" || isAll(filters.month) || p.payment_date.startsWith(filters.month)) &&
+  (ignore === "payer" || isAll(filters.payer) || p.payer === filters.payer) &&
+  (ignore === "paymentType" || isAll(filters.paymentType) || p.payment_type === filters.paymentType) &&
+  (ignore === "direction" || isAll(filters.direction) || p.transaction_direction === filters.direction) &&
+  (ignore === "note" || isAll(filters.note) || p.note === filters.note)
+); }
+function replaceOptions(id, allLabel, entries) {
+  const select = $(id); const selected = select.value; select.replaceChildren();
+  const all = new Option(allLabel, ""); select.add(all);
+  entries.forEach(([value, label]) => select.add(new Option(label, value)));
+  select.value = entries.some(([value]) => value === selected) ? selected : "";
 }
-function refreshNoteFilter() {
-  const filter = $("note-filter"); const selected = filter.value;
-  const selectedNote = selected === "all" ? "all" : decodeURIComponent(selected);
-  const notes = [...new Set(payments.map((payment) => (payment.note || "").trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b));
-  filter.innerHTML = '<option value="all">All notes</option>' + notes.map((note) => `<option value="${encodeURIComponent(note)}">${escapeHtml(note)}</option>`).join("");
-  filter.value = notes.includes(selectedNote) ? encodeURIComponent(selectedNote) : "all";
+function refreshDynamicFilters() {
+  const filters = filterValues();
+  const months = [...new Map(filteredPayments(filters, "month").map((p) => [p.payment_date.slice(0, 7), monthLabel(p.payment_date)])).entries()].sort((a, b) => b[0].localeCompare(a[0]));
+  replaceOptions("month-filter", "All months", months);
+  replaceOptions("payer-filter", "All payers", [...new Set(filteredPayments(filters, "payer").map((p) => p.payer))].sort().map((value) => [value, value]));
+  replaceOptions("payment-type-filter", "All types", [...new Set(filteredPayments(filters, "paymentType").map((p) => p.payment_type))].sort().map((value) => [value, value]));
+  replaceOptions("direction-filter", "All directions", [...new Set(filteredPayments(filters, "direction").map((p) => p.transaction_direction))].sort().map((value) => [value, directionLabel(value)]));
+  const noteSearch = $("note-filter").value.trim().toLowerCase();
+  const notes = [...new Set(filteredPayments(filters, "note").map((p) => (p.note || "").trim()).filter((note) => note && note.toLowerCase().includes(noteSearch)))].sort();
+  const noteOptions = $("note-options"); noteOptions.replaceChildren();
+  notes.forEach((note) => { const option = document.createElement("button"); option.type = "button"; option.className = "note-option"; option.dataset.note = note; option.textContent = note; noteOptions.append(option); });
+  noteOptions.classList.toggle("hidden", !noteMenuOpen || !notes.length);
 }
 function renderPayments() {
-  const month = $("month-filter").value;
-  const payer = $("payer-filter").value;
-  const paymentType = $("payment-type-filter").value;
-  const direction = $("direction-filter").value;
-  const noteValue = $("note-filter").value;
-  const note = noteValue === "all" ? "all" : decodeURIComponent(noteValue);
-  const rows = payments.filter((p) =>
-    (month === "all" || p.payment_date.startsWith(month)) &&
-    (payer === "all" || p.payer === payer) &&
-    (paymentType === "all" || p.payment_type === paymentType) &&
-    (direction === "all" || p.transaction_direction === direction) &&
-    (note === "all" || p.note === note)
-  );
-  const filtersActive = [month, payer, paymentType, direction, note].some((value) => value !== "all");
+  const { month, payer, paymentType, direction, note } = filterValues();
+  const rows = filteredPayments({ month, payer, paymentType, direction, note });
+  const filtersActive = [month, payer, paymentType, direction, note].some(Boolean);
   const totals = rows.reduce((result, payment) => {
     result[payment.currency] = (result[payment.currency] || 0) + Number(payment.amount);
     result.usdEquivalent += Number(payment.usd_equivalent) || 0;
@@ -80,7 +94,7 @@ function renderPayments() {
 async function loadPayments() {
   const { data, error } = await db.from("payments").select("*").order("payment_date", { ascending: false }).order("id", { ascending: false });
   if (error) return message(formMessage, error.message);
-  payments = data; refreshMonthFilter(); refreshNoteFilter(); renderPayments();
+  payments = data; refreshDynamicFilters(); renderPayments(); renderDeposits();
 }
 async function showSignedIn() { authPanel.classList.add("hidden"); app.classList.remove("hidden"); $("sign-out-button").classList.remove("hidden"); await loadPayments(); }
 
@@ -89,7 +103,11 @@ $("sign-out-button").addEventListener("click", async () => { await db.auth.signO
 $("payment-form").addEventListener("submit", async (event) => { event.preventDefault(); const id = $("payment-id").value; const record = { payer: $("payer").value.trim(), payment_type: $("payment-type").value.trim(), transaction_direction: $("transaction-direction").value, amount: $("amount").value, currency: $("currency").value, usd_equivalent: $("currency").value === "CNY" && $("usd-equivalent").value ? $("usd-equivalent").value : null, note: $("note").value.trim(), payment_date: $("payment-date").value }; const query = id ? db.from("payments").update(record).eq("id", id) : db.from("payments").insert(record).select("id").single(); const { data, error } = await query; if (error) return message(formMessage, error.message); recentChange = { id: id || data.id, type: id ? "edited" : "added" }; resetForm(); await loadPayments(); });
 $("currency").addEventListener("change", toggleUsdEquivalent);
 $("cancel-edit-button").addEventListener("click", resetForm);
-["month-filter", "payer-filter", "payment-type-filter", "direction-filter", "note-filter"].forEach((id) => $(id).addEventListener("change", renderPayments));
+["month-filter", "payer-filter", "payment-type-filter", "direction-filter"].forEach((id) => $(id).addEventListener("change", () => { refreshDynamicFilters(); renderPayments(); }));
+$("note-filter").addEventListener("focus", () => { noteMenuOpen = true; refreshDynamicFilters(); });
+$("note-filter").addEventListener("input", () => { selectedNote = ""; noteMenuOpen = true; refreshDynamicFilters(); renderPayments(); });
+$("note-options").addEventListener("click", (event) => { const option = event.target.closest(".note-option"); if (!option) return; selectedNote = option.dataset.note; $("note-filter").value = selectedNote; noteMenuOpen = false; refreshDynamicFilters(); renderPayments(); });
+document.addEventListener("click", (event) => { if (!event.target.closest(".note-combobox")) { noteMenuOpen = false; refreshDynamicFilters(); } });
 $("rent-due").addEventListener("input", renderPayments);
 $("utility-due").addEventListener("input", renderPayments);
 $("payments-body").addEventListener("click", async (event) => { const id = event.target.dataset.edit || event.target.dataset.delete; if (!id) return; const payment = payments.find((item) => String(item.id) === id); if (event.target.dataset.edit) { $("payment-id").value = payment.id; $("payer").value = payment.payer; $("payment-type").value = payment.payment_type; $("transaction-direction").value = payment.transaction_direction || "received"; $("amount").value = payment.amount; $("currency").value = payment.currency; $("usd-equivalent").value = payment.usd_equivalent || ""; toggleUsdEquivalent(); $("note").value = payment.note || ""; $("payment-date").value = payment.payment_date; $("payment-form").classList.add("is-editing"); $("form-title").textContent = "Edit payment"; $("save-button").textContent = "Save changes"; $("cancel-edit-button").classList.remove("hidden"); $("payer").focus(); window.scrollTo({ top: 0, behavior: "smooth" }); } else if (window.confirm(`Delete payment from ${payment.payer}?`)) { event.target.closest("tr").classList.add("row-removing"); await new Promise((resolve) => setTimeout(resolve, 180)); const { error } = await db.from("payments").delete().eq("id", id); if (error) return message(formMessage, error.message); await loadPayments(); } });
