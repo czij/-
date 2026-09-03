@@ -4,6 +4,7 @@ A tiny static payment and receivables tracker. It runs directly on GitHub Pages 
 
 Records are marked as either **收款** (money received) or **付款** (money paid out).
 Payers are selected from a fixed personal list: Chunyang Tong, Xiaomeng Sun, Yijie Ru, Xiaoquan Zhang, Zijun Chen, or Bingbing.
+Payment types are selected from: 租金, Utility, and 押金.
 
 ## Set up Supabase
 

@@ -43,7 +43,14 @@
                 <option value="Bingbing">Bingbing</option>
               </select>
             </label>
-            <label>Payment Type<input id="payment-type" type="text" placeholder="Rent" required /></label>
+            <label>Payment Type
+              <select id="payment-type" required>
+                <option value="" selected disabled>Select payment type</option>
+                <option value="租金">租金</option>
+                <option value="Utility">Utility</option>
+                <option value="押金">押金</option>
+              </select>
+            </label>
             <label>Direction
               <select id="transaction-direction" required><option value="received">收款</option><option value="paid">付款</option></select>
             </label>
