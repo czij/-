@@ -25,23 +25,41 @@ function refreshMonthFilter() {
   filter.innerHTML = '<option value="all">All</option>' + months.map(([value, label]) => `<option value="${value}">${label}</option>`).join("");
   filter.value = months.some(([value]) => value === selected) ? selected : "all";
 }
+function refreshNoteFilter() {
+  const filter = $("note-filter"); const selected = filter.value;
+  const selectedNote = selected === "all" ? "all" : decodeURIComponent(selected);
+  const notes = [...new Set(payments.map((payment) => (payment.note || "").trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+  filter.innerHTML = '<option value="all">All notes</option>' + notes.map((note) => `<option value="${encodeURIComponent(note)}">${escapeHtml(note)}</option>`).join("");
+  filter.value = notes.includes(selectedNote) ? encodeURIComponent(selectedNote) : "all";
+}
 function renderPayments() {
   const month = $("month-filter").value;
   const payer = $("payer-filter").value;
   const paymentType = $("payment-type-filter").value;
   const direction = $("direction-filter").value;
+  const noteValue = $("note-filter").value;
+  const note = noteValue === "all" ? "all" : decodeURIComponent(noteValue);
   const rows = payments.filter((p) =>
     (month === "all" || p.payment_date.startsWith(month)) &&
     (payer === "all" || p.payer === payer) &&
     (paymentType === "all" || p.payment_type === paymentType) &&
-    (direction === "all" || p.transaction_direction === direction)
+    (direction === "all" || p.transaction_direction === direction) &&
+    (note === "all" || p.note === note)
   );
+  const filtersActive = [month, payer, paymentType, direction, note].some((value) => value !== "all");
+  const totals = rows.reduce((result, payment) => {
+    result[payment.currency] = (result[payment.currency] || 0) + Number(payment.amount);
+    return result;
+  }, { USD: 0, CNY: 0 });
   $("payments-body").innerHTML = rows.length ? rows.map((p) => `<tr><td>${monthLabel(p.payment_date)}</td><td>${escapeHtml(p.payer)}</td><td>${escapeHtml(p.payment_type)}</td><td>${directionLabel(p.transaction_direction)}</td><td>${formatAmount(p.amount, p.currency)}</td><td>${escapeHtml(p.note)}</td><td>${displayDate(p.payment_date)}</td><td><div class="row-actions"><button class="button secondary" type="button" data-edit="${p.id}">Edit</button><button class="button secondary danger" type="button" data-delete="${p.id}">Delete</button></div></td></tr>`).join("") : '<tr><td colspan="8">No payments found.</td></tr>';
+  const totalRow = $("payments-total");
+  totalRow.classList.toggle("hidden", !filtersActive);
+  totalRow.innerHTML = filtersActive ? `<tr><td colspan="4">Total (filtered results)</td><td colspan="4"><span class="currency-total">USD ${formatAmount(totals.USD, "USD")}</span><span class="currency-total">CNY ${formatAmount(totals.CNY, "CNY")}</span></td></tr>` : "";
 }
 async function loadPayments() {
   const { data, error } = await db.from("payments").select("*").order("payment_date", { ascending: false }).order("id", { ascending: false });
   if (error) return message(formMessage, error.message);
-  payments = data; refreshMonthFilter(); renderPayments();
+  payments = data; refreshMonthFilter(); refreshNoteFilter(); renderPayments();
 }
 async function showSignedIn() { authPanel.classList.add("hidden"); app.classList.remove("hidden"); $("sign-out-button").classList.remove("hidden"); await loadPayments(); }
 
@@ -49,7 +67,7 @@ $("sign-in-form").addEventListener("submit", async (event) => { event.preventDef
 $("sign-out-button").addEventListener("click", async () => { await db.auth.signOut(); app.classList.add("hidden"); authPanel.classList.remove("hidden"); $("sign-out-button").classList.add("hidden"); resetForm(); });
 $("payment-form").addEventListener("submit", async (event) => { event.preventDefault(); const id = $("payment-id").value; const record = { payer: $("payer").value.trim(), payment_type: $("payment-type").value.trim(), transaction_direction: $("transaction-direction").value, amount: $("amount").value, currency: $("currency").value, note: $("note").value.trim(), payment_date: $("payment-date").value }; const query = id ? db.from("payments").update(record).eq("id", id) : db.from("payments").insert(record); const { error } = await query; if (error) return message(formMessage, error.message); resetForm(); await loadPayments(); });
 $("cancel-edit-button").addEventListener("click", resetForm);
-["month-filter", "payer-filter", "payment-type-filter", "direction-filter"].forEach((id) => $(id).addEventListener("change", renderPayments));
+["month-filter", "payer-filter", "payment-type-filter", "direction-filter", "note-filter"].forEach((id) => $(id).addEventListener("change", renderPayments));
 $("payments-body").addEventListener("click", async (event) => { const id = event.target.dataset.edit || event.target.dataset.delete; if (!id) return; const payment = payments.find((item) => String(item.id) === id); if (event.target.dataset.edit) { $("payment-id").value = payment.id; $("payer").value = payment.payer; $("payment-type").value = payment.payment_type; $("transaction-direction").value = payment.transaction_direction || "received"; $("amount").value = payment.amount; $("currency").value = payment.currency; $("note").value = payment.note || ""; $("payment-date").value = payment.payment_date; $("form-title").textContent = "Edit payment"; $("save-button").textContent = "Save changes"; $("cancel-edit-button").classList.remove("hidden"); $("payer").focus(); window.scrollTo({ top: 0, behavior: "smooth" }); } else if (window.confirm(`Delete payment from ${payment.payer}?`)) { const { error } = await db.from("payments").delete().eq("id", id); if (error) return message(formMessage, error.message); await loadPayments(); } });
 
 if (!configured) { message(authMessage, "Configure SUPABASE_URL and SUPABASE_ANON_KEY in config.js first."); } else { db.auth.getSession().then(({ data: { session } }) => { if (session) showSignedIn(); }); }

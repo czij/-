@@ -82,12 +82,16 @@
               <label>Direction
                 <select id="direction-filter"><option value="all">All directions</option><option value="received">收款</option><option value="paid">付款</option></select>
               </label>
+              <label>Note
+                <select id="note-filter"><option value="all">All notes</option></select>
+              </label>
             </div>
           </div>
           <div class="table-wrap">
             <table>
               <thead><tr><th>Month</th><th>Payer</th><th>Type</th><th>Direction</th><th>Amount</th><th>Note</th><th>Payment Date</th><th>Actions</th></tr></thead>
               <tbody id="payments-body"></tbody>
+              <tfoot id="payments-total" class="hidden"></tfoot>
             </table>
           </div>
         </section>
