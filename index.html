@@ -32,7 +32,17 @@
           <h2 id="form-title">Add payment</h2>
           <form id="payment-form" class="payment-form">
             <input id="payment-id" type="hidden" />
-            <label>Payer<input id="payer" type="text" required /></label>
+            <label>Payer
+              <select id="payer" required>
+                <option value="" selected disabled>Select payer</option>
+                <option value="Chunyang Tong">Chunyang Tong</option>
+                <option value="Xiaomeng Sun">Xiaomeng Sun</option>
+                <option value="Yijie Ru">Yijie Ru</option>
+                <option value="Xiaoquan Zhang">Xiaoquan Zhang</option>
+                <option value="Zijun Chen">Zijun Chen</option>
+                <option value="Bingbing">Bingbing</option>
+              </select>
+            </label>
             <label>Payment Type<input id="payment-type" type="text" placeholder="Rent" required /></label>
             <label>Direction
               <select id="transaction-direction" required><option value="received">收款</option><option value="paid">付款</option></select>
